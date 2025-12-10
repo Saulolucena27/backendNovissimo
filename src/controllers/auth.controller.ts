@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { AuthRequest } from '../middlewares/auth.middleware';
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 const prisma = new PrismaClient();
 
@@ -15,19 +15,19 @@ export class AuthController {
       if (!email || !senha) {
         return res.status(400).json({
           success: false,
-          message: 'Email e senha são obrigatórios'
+          message: "Email e senha são obrigatórios",
         });
       }
 
       // Buscar usuário
       const user = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() }
+        where: { email: email.toLowerCase() },
       });
 
       if (!user) {
         return res.status(401).json({
           success: false,
-          message: 'Credenciais inválidas'
+          message: "Credenciais inválidas",
         });
       }
 
@@ -37,50 +37,54 @@ export class AuthController {
       if (!senhaValida) {
         return res.status(401).json({
           success: false,
-          message: 'Credenciais inválidas'
+          message: "Credenciais inválidas",
         });
       }
 
       // Verificar status
-      if (user.status !== 'ATIVO') {
+      if (user.status !== "ATIVO") {
         return res.status(403).json({
           success: false,
-          message: 'Usuário inativo ou pendente de aprovação'
+          message: "Usuário inativo ou pendente de aprovação",
         });
       }
 
-      // Gerar token JWT
+      if (!process.env.JWT_SECRET) {
+        throw new Error("JWT_SECRET não está definida");
+      }
+
+      // Correção: definir explicitamente o tipo ou usar string literal
       const token = jwt.sign(
         {
           id: user.id,
           email: user.email,
-          cargo: user.cargo
+          cargo: user.cargo,
         },
-        process.env.JWT_SECRET as string,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" } // Use string literal diretamente
       );
 
       // Atualizar último acesso
       await prisma.user.update({
         where: { id: user.id },
-        data: { ultimoAcesso: new Date() }
+        data: { ultimoAcesso: new Date() },
       });
 
       // Log de auditoria
       await prisma.auditLog.create({
         data: {
           userId: user.id,
-          acao: 'LOGIN',
-          entidade: 'AUTH',
+          acao: "LOGIN",
+          entidade: "AUTH",
           detalhes: { email: user.email },
           ip: req.ip,
-          userAgent: req.headers['user-agent']
-        }
+          userAgent: req.headers["user-agent"],
+        },
       });
 
       return res.json({
         success: true,
-        message: 'Login realizado com sucesso',
+        message: "Login realizado com sucesso",
         data: {
           token,
           user: {
@@ -90,15 +94,15 @@ export class AuthController {
             cargo: user.cargo,
             departamento: user.departamento,
             avatar: user.avatar,
-            permissoes: user.permissoes
-          }
-        }
+            permissoes: user.permissoes,
+          },
+        },
       });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Erro ao realizar login'
+        message: "Erro ao realizar login",
       });
     }
   }
@@ -106,33 +110,26 @@ export class AuthController {
   // ==================== REGISTER ====================
   async register(req: Request, res: Response) {
     try {
-      const {
-        nome,
-        email,
-        senha,
-        cargo,
-        departamento,
-        telefone,
-        permissoes
-      } = req.body;
+      const { nome, email, senha, cargo, departamento, telefone, permissoes } =
+        req.body;
 
       // Validações
       if (!nome || !email || !senha || !cargo || !departamento || !telefone) {
         return res.status(400).json({
           success: false,
-          message: 'Todos os campos obrigatórios devem ser preenchidos'
+          message: "Todos os campos obrigatórios devem ser preenchidos",
         });
       }
 
       // Verificar se email já existe
       const existingUser = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() }
+        where: { email: email.toLowerCase() },
       });
 
       if (existingUser) {
         return res.status(409).json({
           success: false,
-          message: 'Email já cadastrado'
+          message: "Email já cadastrado",
         });
       }
 
@@ -141,9 +138,9 @@ export class AuthController {
 
       // Criar avatar com iniciais
       const iniciais = nome
-        .split(' ')
-        .map(n => n[0])
-        .join('')
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
         .toUpperCase()
         .substring(0, 2);
 
@@ -157,26 +154,27 @@ export class AuthController {
           departamento,
           telefone,
           avatar: iniciais,
-          permissoes: permissoes || ['Visualizar'],
-          status: 'PENDENTE' // Precisa de aprovação do admin
-        }
+          permissoes: permissoes || ["Visualizar"],
+          status: "PENDENTE", // Precisa de aprovação do admin
+        },
       });
 
       return res.status(201).json({
         success: true,
-        message: 'Usuário cadastrado com sucesso. Aguarde aprovação do administrador.',
+        message:
+          "Usuário cadastrado com sucesso. Aguarde aprovação do administrador.",
         data: {
           id: user.id,
           nome: user.nome,
           email: user.email,
-          status: user.status
-        }
+          status: user.status,
+        },
       });
     } catch (error) {
-      console.error('Register error:', error);
+      console.error("Register error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Erro ao cadastrar usuário'
+        message: "Erro ao cadastrar usuário",
       });
     }
   }
@@ -187,7 +185,7 @@ export class AuthController {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Não autenticado'
+          message: "Não autenticado",
         });
       }
 
@@ -204,19 +202,19 @@ export class AuthController {
           status: true,
           permissoes: true,
           createdAt: true,
-          ultimoAcesso: true
-        }
+          ultimoAcesso: true,
+        },
       });
 
       return res.json({
         success: true,
-        data: user
+        data: user,
       });
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error("Get current user error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Erro ao buscar dados do usuário'
+        message: "Erro ao buscar dados do usuário",
       });
     }
   }
@@ -229,24 +227,24 @@ export class AuthController {
         await prisma.auditLog.create({
           data: {
             userId: req.user.id,
-            acao: 'LOGOUT',
-            entidade: 'AUTH',
+            acao: "LOGOUT",
+            entidade: "AUTH",
             detalhes: {},
             ip: req.ip,
-            userAgent: req.headers['user-agent']
-          }
+            userAgent: req.headers["user-agent"],
+          },
         });
       }
 
       return res.json({
         success: true,
-        message: 'Logout realizado com sucesso'
+        message: "Logout realizado com sucesso",
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Erro ao realizar logout'
+        message: "Erro ao realizar logout",
       });
     }
   }
