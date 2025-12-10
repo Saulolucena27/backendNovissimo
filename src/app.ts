@@ -1,8 +1,8 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
-import path from "path"; // Import necessário
-import uploadConfig from "./config/upload"; // Import da configuração
-import { errorMiddleware } from "./middlewares/error.middleware";
+import path from "path";
+import uploadConfig from "./config/upload";
+import { ErrorMiddleware } from "./middlewares/error.middleware"; // CORREÇÃO: importar a classe
 
 // Routes
 import authRoutes from "./routes/auth.routes";
@@ -47,7 +47,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/reports", reportRoutes);
 
 // ==================== ERROR HANDLING ====================
-app.use(errorMiddleware);
+// CORREÇÃO: instanciar a classe e usar o método handle
+const errorHandler = new ErrorMiddleware();
+app.use(errorHandler.handle.bind(errorHandler));
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

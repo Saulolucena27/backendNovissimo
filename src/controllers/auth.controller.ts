@@ -53,7 +53,7 @@ export class AuthController {
         throw new Error("JWT_SECRET não está definida");
       }
 
-      // Correção: definir explicitamente o tipo ou usar string literal
+      // Correção: usar string literal diretamente
       const token = jwt.sign(
         {
           id: user.id,
@@ -61,7 +61,7 @@ export class AuthController {
           cargo: user.cargo,
         },
         process.env.JWT_SECRET,
-        { expiresIn: "7d" } // Use string literal diretamente
+        { expiresIn: "7d" }
       );
 
       // Atualizar último acesso

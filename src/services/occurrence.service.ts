@@ -138,6 +138,38 @@ export class OccurrenceService {
     return updatedOccurrence;
   }
 
+  async delete(id: string) {
+    return await prisma.occurrence.delete({
+      where: { id }
+    });
+  }
+
+  async getStatistics() {
+    const total = await prisma.occurrence.count();
+    
+    const porTipo = await prisma.occurrence.groupBy({
+      by: ["tipo"],
+      _count: true,
+    });
+    
+    const porStatus = await prisma.occurrence.groupBy({
+      by: ["status"],
+      _count: true,
+    });
+    
+    const porPrioridade = await prisma.occurrence.groupBy({
+      by: ["prioridade"],
+      _count: true,
+    });
+
+    return {
+      total,
+      porTipo,
+      porStatus,
+      porPrioridade,
+    };
+  }
+
   private async geocodeAddress(address: string): Promise<{ latitude: number; longitude: number }> {
     const apiKey = process.env.OPENCAGE_API_KEY;
     
