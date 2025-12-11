@@ -7,312 +7,253 @@ async function main() {
   console.log('Iniciando seed do banco de dados...');
 
   // Limpar dados existentes
-  await prisma.auditLog.deleteMany();
   await prisma.occurrenceHistory.deleteMany();
   await prisma.occurrence.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.user.deleteMany();
 
-  // ==================== USUÁRIOS ====================
+  // ========== CRIAR USUÁRIOS ==========
   console.log('Criando usuários...');
+  
+  const hashedPassword = await bcrypt.hash('123456', 10);
 
-  const adminSenha = await bcrypt.hash('admin123', 10);
-  const userSenha = await bcrypt.hash('senha123', 10);
+  const users = await Promise.all([
+    prisma.user.create({
+      data: {
+        nome: 'Admin Sistema',
+        email: 'admin@sisocc.com',
+        senha: hashedPassword,
+        cargo: 'Administrador',
+        departamento: 'TI',
+        telefone: '81999999999',
+        avatar: 'AD',
+        status: 'ATIVO',
+        permissoes: ['Criar', 'Editar', 'Visualizar', 'Excluir', 'Gerenciar']
+      }
+    }),
+    prisma.user.create({
+      data: {
+        nome: 'João Silva',
+        email: 'joao@sisocc.com',
+        senha: hashedPassword,
+        cargo: 'Coordenador',
+        departamento: 'Operações',
+        telefone: '81988888888',
+        avatar: 'JS',
+        status: 'ATIVO',
+        permissoes: ['Criar', 'Editar', 'Visualizar']
+      }
+    }),
+    prisma.user.create({
+      data: {
+        nome: 'Maria Santos',
+        email: 'maria@sisocc.com',
+        senha: hashedPassword,
+        cargo: 'Analista',
+        departamento: 'Atendimento',
+        telefone: '81977777777',
+        avatar: 'MS',
+        status: 'ATIVO',
+        permissoes: ['Criar', 'Visualizar']
+      }
+    }),
+    prisma.user.create({
+      data: {
+        nome: 'Carlos Oliveira',
+        email: 'carlos@sisocc.com',
+        senha: hashedPassword,
+        cargo: 'Técnico',
+        departamento: 'Campo',
+        telefone: '81966666666',
+        avatar: 'CO',
+        status: 'ATIVO',
+        permissoes: ['Visualizar']
+      }
+    }),
+    prisma.user.create({
+      data: {
+        nome: 'Ana Costa',
+        email: 'ana@sisocc.com',
+        senha: hashedPassword,
+        cargo: 'Supervisora',
+        departamento: 'Operações',
+        telefone: '81955555555',
+        avatar: 'AC',
+        status: 'ATIVO',
+        permissoes: ['Criar', 'Editar', 'Visualizar']
+      }
+    })
+  ]);
 
-  const admin = await prisma.user.create({
-    data: {
-      nome: 'Administrador Sistema',
-      email: 'admin@bombeiros.pe.gov.br',
-      senha: adminSenha,
-      cargo: 'Comandante',
-      departamento: 'Gestão',
-      status: 'ATIVO',
-      telefone: '(81) 99999-0001',
-      avatar: 'AS',
-      permissoes: ['Visualizar', 'Editar', 'Excluir', 'Aprovar', 'Gerenciar'],
-      ultimoAcesso: new Date()
-    }
-  });
+  console.log('✅ 5 usuários criados');
 
-  const coordenador = await prisma.user.create({
-    data: {
-      nome: 'João Silva Santos',
-      email: 'joao.silva@bombeiros.pe.gov.br',
-      senha: userSenha,
-      cargo: 'Coordenador',
-      departamento: 'Operações',
-      status: 'ATIVO',
-      telefone: '(81) 99999-0002',
-      avatar: 'JS',
-      permissoes: ['Visualizar', 'Editar', 'Aprovar'],
-      ultimoAcesso: new Date()
-    }
-  });
-
-  const analista = await prisma.user.create({
-    data: {
-      nome: 'Maria Oliveira Costa',
-      email: 'maria.oliveira@bombeiros.pe.gov.br',
-      senha: userSenha,
-      cargo: 'Analista',
-      departamento: 'Análise de Risco',
-      status: 'ATIVO',
-      telefone: '(81) 99999-0003',
-      avatar: 'MO',
-      permissoes: ['Visualizar', 'Editar'],
-      ultimoAcesso: new Date(Date.now() - 2 * 60 * 60 * 1000)
-    }
-  });
-
-  const tecnico = await prisma.user.create({
-    data: {
-      nome: 'Carlos Alberto Lima',
-      email: 'carlos.lima@bombeiros.pe.gov.br',
-      senha: userSenha,
-      cargo: 'Técnico',
-      departamento: 'Campo',
-      status: 'ATIVO',
-      telefone: '(81) 99999-0004',
-      avatar: 'CA',
-      permissoes: ['Visualizar', 'Editar'],
-      ultimoAcesso: new Date(Date.now() - 5 * 60 * 60 * 1000)
-    }
-  });
-
-  // CORREÇÃO 1: Removida a atribuição à variável 'pendente' não utilizada
-  await prisma.user.create({
-    data: {
-      nome: 'Ana Paula Santos',
-      email: 'ana.santos@bombeiros.pe.gov.br',
-      senha: userSenha,
-      cargo: 'Estagiária',
-      departamento: 'Administrativo',
-      status: 'PENDENTE',
-      telefone: '(81) 99999-0005',
-      avatar: 'AP',
-      permissoes: ['Visualizar']
-    }
-  });
-
-  console.log(`✅ ${5} usuários criados`);
-
-  // ==================== OCORRÊNCIAS ====================
+  // ========== CRIAR OCORRÊNCIAS ==========
   console.log('🚨 Criando ocorrências...');
 
-  const tiposOcorrencia = [
-    'INCENDIO',
-    'ALAGAMENTO',
-    'TRANSITO',
-    'RISCO',
-    'QUEDA_ARVORE',
-    'ACIDENTE',
-    'RESGATE',
-    'VAZAMENTO'
-  ];
-
-  // CORREÇÃO 2: Removido o array 'bairrosRecife' não utilizado
-
-  const coordenadasRecife = [
-    { lat: -8.1137, lng: -34.9048, bairro: 'Boa Viagem' },
-    { lat: -8.0300, lng: -34.9200, bairro: 'Casa Amarela' },
-    { lat: -8.0603, lng: -34.8710, bairro: 'Centro' },
-    { lat: -8.0400, lng: -34.9600, bairro: 'Várzea' },
-    { lat: -8.0900, lng: -34.8800, bairro: 'Pina' },
-    { lat: -8.1190, lng: -35.0040, bairro: 'Ibura' },
-    { lat: -8.0650, lng: -34.8820, bairro: 'Piedade' },
-    { lat: -8.0500, lng: -34.8900, bairro: 'Torre' },
-    { lat: -8.0800, lng: -34.9100, bairro: 'Encruzilhada' },
-    { lat: -8.0700, lng: -34.9300, bairro: 'Afogados' }
-  ];
-
-  const descricoes = {
-    INCENDIO: [
-      'Princípio de incêndio em residência',
-      'Incêndio em vegetação seca',
-      'Fogo em estabelecimento comercial',
-      'Incêndio em veículo'
-    ],
-    ALAGAMENTO: [
-      'Alagamento de via pública',
-      'Água acumulada em área residencial',
-      'Risco de inundação',
-      'Bueiro entupido causando alagamento'
-    ],
-    TRANSITO: [
-      'Acidente de trânsito com vítimas',
-      'Colisão entre veículos',
-      'Atropelamento de pedestre',
-      'Veículo capotado'
-    ],
-    RISCO: [
-      'Risco de desabamento',
-      'Estrutura comprometida',
-      'Árvore em risco de queda',
-      'Fissuras em edificação'
-    ],
-    QUEDA_ARVORE: [
-      'Árvore caída bloqueando via',
-      'Galhos em risco de queda',
-      'Árvore sobre fiação elétrica',
-      'Queda de árvore em propriedade'
-    ],
-    ACIDENTE: [
-      'Acidente de trabalho',
-      'Queda de altura',
-      'Acidente doméstico',
-      'Ferimento grave'
-    ],
-    RESGATE: [
-      'Pessoa ilhada por enchente',
-      'Resgate em área de difícil acesso',
-      'Animal preso em local perigoso',
-      'Pessoa em situação de risco'
-    ],
-    VAZAMENTO: [
-      'Vazamento de gás',
-      'Vazamento de água',
-      'Vazamento de produto químico',
-      'Rompimento de tubulação'
-    ]
-  };
-
-  const occurrences = [];
-
-  for (let i = 0; i < 50; i++) {
-    const tipo = tiposOcorrencia[Math.floor(Math.random() * tiposOcorrencia.length)] as any;
-    const coordenada = coordenadasRecife[Math.floor(Math.random() * coordenadasRecife.length)];
-    const descricaoLista = descricoes[tipo as keyof typeof descricoes];
-    const descricao = descricaoLista[Math.floor(Math.random() * descricaoLista.length)];
-
-    // Variar as datas nos últimos 30 dias
-    const diasAtras = Math.floor(Math.random() * 30);
-    const horasAtras = Math.floor(Math.random() * 24);
-    const dataOcorrencia = new Date(Date.now() - diasAtras * 24 * 60 * 60 * 1000 - horasAtras * 60 * 60 * 1000);
-
-    // Definir status baseado na antiguidade
-    let status;
-    let dataAtendimento = null;
-    let dataConclusao = null;
-    let tempoResposta = null;
-
-    if (diasAtras > 20) {
-      status = 'CONCLUIDO';
-      dataAtendimento = new Date(dataOcorrencia.getTime() + Math.random() * 2 * 60 * 60 * 1000);
-      dataConclusao = new Date(dataAtendimento.getTime() + Math.random() * 5 * 60 * 60 * 1000);
-      tempoResposta = Math.floor((dataAtendimento.getTime() - dataOcorrencia.getTime()) / 60000);
-    } else if (diasAtras > 10) {
-      status = 'EM_ATENDIMENTO';
-      dataAtendimento = new Date(dataOcorrencia.getTime() + Math.random() * 2 * 60 * 60 * 1000);
-      tempoResposta = Math.floor((dataAtendimento.getTime() - dataOcorrencia.getTime()) / 60000);
-    } else if (diasAtras > 3) {
-      status = 'EM_ANALISE';
-    } else {
-      status = 'NOVO';
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'QUEDA_ARVORE',
+      local: 'Boa Viagem',
+      endereco: 'Av. Boa Viagem, 1500',
+      bairro: 'Boa Viagem',
+      latitude: -8.1276,
+      longitude: -34.9047,
+      status: 'NOVO',
+      prioridade: 'ALTA',
+      descricao: 'Árvore caída bloqueando via',
+      criadoPorId: users[1].id,
+      responsavelId: users[0].id
     }
+  });
 
-    const prioridades = ['BAIXA', 'MEDIA', 'ALTA', 'CRITICA'];
-    const prioridade = tipo === 'INCENDIO' || tipo === 'ACIDENTE' || tipo === 'RESGATE'
-      ? prioridades[Math.floor(Math.random() * 2) + 2] // ALTA ou CRITICA
-      : prioridades[Math.floor(Math.random() * 3)]; // BAIXA, MEDIA ou ALTA
-
-    // Adicionar variação nas coordenadas para não sobrepor
-    const latVariacao = (Math.random() - 0.5) * 0.01;
-    const lngVariacao = (Math.random() - 0.5) * 0.01;
-
-    const occurrence = await prisma.occurrence.create({
-      data: {
-        tipo: tipo as any,
-        local: `Rua ${Math.floor(Math.random() * 500) + 1}`,
-        endereco: `Rua ${Math.floor(Math.random() * 500) + 1}, ${coordenada.bairro}, Recife - PE`,
-        bairro: coordenada.bairro,
-        latitude: coordenada.lat + latVariacao,
-        longitude: coordenada.lng + lngVariacao,
-        status: status as any,
-        prioridade: prioridade as any,
-        descricao,
-        dataOcorrencia,
-        dataAtendimento,
-        dataConclusao,
-        tempoResposta,
-        criadoPorId: [admin.id, coordenador.id, analista.id, tecnico.id][Math.floor(Math.random() * 4)],
-        responsavelId: status !== 'NOVO' 
-          ? [coordenador.id, analista.id, tecnico.id][Math.floor(Math.random() * 3)]
-          : null
-      }
-    });
-
-    occurrences.push(occurrence);
-  }
-
-  console.log(`✅ ${occurrences.length} ocorrências criadas`);
-
-  // ==================== HISTÓRICO ====================
-  console.log('📝 Criando histórico de alterações...');
-
-  let historicoCount = 0;
-  for (const occ of occurrences.filter(o => o.status !== 'NOVO')) {
-    await prisma.occurrenceHistory.create({
-      data: {
-        occurrenceId: occ.id,
-        statusAnterior: 'NOVO',
-        statusNovo: 'EM_ANALISE',
-        observacao: 'Ocorrência recebida e em análise',
-        modificadoPor: coordenador.id,
-        createdAt: new Date(occ.dataOcorrencia.getTime() + 30 * 60 * 1000)
-      }
-    });
-    historicoCount++;
-
-    if (occ.status === 'EM_ATENDIMENTO' || occ.status === 'CONCLUIDO') {
-      await prisma.occurrenceHistory.create({
-        data: {
-          occurrenceId: occ.id,
-          statusAnterior: 'EM_ANALISE',
-          statusNovo: 'EM_ATENDIMENTO',
-          observacao: 'Equipe despachada para atendimento',
-          modificadoPor: coordenador.id,
-          createdAt: occ.dataAtendimento!
-        }
-      });
-      historicoCount++;
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'ACIDENTE',
+      local: 'Centro',
+      endereco: 'Rua da Aurora, 200',
+      bairro: 'Santo Amaro',
+      latitude: -8.0578,
+      longitude: -34.8829,
+      status: 'EM_ATENDIMENTO',
+      prioridade: 'CRITICA',
+      descricao: 'Acidente de trânsito com vítimas',
+      criadoPorId: users[2].id,
+      responsavelId: users[3].id,
+      dataAtendimento: new Date()
     }
+  });
 
-    if (occ.status === 'CONCLUIDO') {
-      await prisma.occurrenceHistory.create({
-        data: {
-          occurrenceId: occ.id,
-          statusAnterior: 'EM_ATENDIMENTO',
-          statusNovo: 'CONCLUIDO',
-          observacao: 'Ocorrência atendida e finalizada',
-          modificadoPor: tecnico.id,
-          createdAt: occ.dataConclusao!
-        }
-      });
-      historicoCount++;
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'ENCHENTE',
+      local: 'Recife Antigo',
+      endereco: 'Rua do Bom Jesus, 50',
+      bairro: 'Recife',
+      latitude: -8.0631,
+      longitude: -34.8711,
+      status: 'EM_ANALISE',
+      prioridade: 'ALTA',
+      descricao: 'Alagamento após chuva forte',
+      criadoPorId: users[1].id
     }
-  }
+  });
 
-  console.log(`✅ ${historicoCount} registros de histórico criados`);
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'ILUMINACAO',
+      local: 'Casa Amarela',
+      endereco: 'Estrada do Arraial, 1000',
+      bairro: 'Casa Amarela',
+      latitude: -8.0247,
+      longitude: -34.9178,
+      status: 'NOVO',
+      prioridade: 'MEDIA',
+      descricao: 'Poste de iluminação sem funcionar',
+      criadoPorId: users[2].id
+    }
+  });
 
-  // ==================== RESUMO ====================
-  console.log('\n📊 RESUMO DO SEED:');
-  console.log('================================');
-  console.log(`👤 Usuários: ${await prisma.user.count()}`);
-  console.log(`🚨 Ocorrências: ${await prisma.occurrence.count()}`);
-  console.log(`📝 Histórico: ${await prisma.occurrenceHistory.count()}`);
-  console.log('================================\n');
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'BURACO',
+      local: 'Imbiribeira',
+      endereco: 'Av. Mascarenhas de Morais, 3000',
+      bairro: 'Imbiribeira',
+      latitude: -8.1169,
+      longitude: -34.9089,
+      status: 'CONCLUIDO',
+      prioridade: 'MEDIA',
+      descricao: 'Buraco na pista causando danos aos veículos',
+      criadoPorId: users[3].id,
+      responsavelId: users[4].id,
+      dataAtendimento: new Date(Date.now() - 86400000),
+      dataConclusao: new Date(),
+      tempoResposta: 120
+    }
+  });
 
-  console.log('📝 CREDENCIAIS DE ACESSO:');
-  console.log('================================');
-  console.log('Admin:');
-  console.log('  Email: admin@bombeiros.pe.gov.br');
-  console.log('  Senha: admin123');
-  console.log('\nCoordenador:');
-  console.log('  Email: joao.silva@bombeiros.pe.gov.br');
-  console.log('  Senha: senha123');
-  console.log('\nAnalista:');
-  console.log('  Email: maria.oliveira@bombeiros.pe.gov.br');
-  console.log('  Senha: senha123');
-  console.log('================================\n');
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'BLOQUEIO_VIA',
+      local: 'Boa Vista',
+      endereco: 'Av. Conde da Boa Vista, 500',
+      bairro: 'Boa Vista',
+      latitude: -8.0522,
+      longitude: -34.8936,
+      status: 'EM_ATENDIMENTO',
+      prioridade: 'ALTA',
+      descricao: 'Via bloqueada por obra emergencial',
+      criadoPorId: users[0].id,
+      responsavelId: users[1].id,
+      dataAtendimento: new Date()
+    }
+  });
+
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'DESLIZAMENTO',
+      local: 'Morro da Conceição',
+      endereco: 'Ladeira da Conceição, s/n',
+      bairro: 'Morro da Conceição',
+      latitude: -8.0745,
+      longitude: -34.8794,
+      status: 'NOVO',
+      prioridade: 'CRITICA',
+      descricao: 'Risco de deslizamento após chuvas',
+      criadoPorId: users[4].id
+    }
+  });
+
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'INCENDIO',
+      local: 'Derby',
+      endereco: 'Praça do Derby, 100',
+      bairro: 'Derby',
+      latitude: -8.0489,
+      longitude: -34.8933,
+      status: 'CONCLUIDO',
+      prioridade: 'CRITICA',
+      descricao: 'Incêndio em estabelecimento comercial',
+      criadoPorId: users[2].id,
+      responsavelId: users[0].id,
+      dataAtendimento: new Date(Date.now() - 3600000),
+      dataConclusao: new Date(),
+      tempoResposta: 15
+    }
+  });
+
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'VANDALISMO',
+      local: 'Encruzilhada',
+      endereco: 'Av. Norte, 2000',
+      bairro: 'Encruzilhada',
+      latitude: -8.0842,
+      longitude: -34.9145,
+      status: 'EM_ANALISE',
+      prioridade: 'BAIXA',
+      descricao: 'Pixação em patrimônio público',
+      criadoPorId: users[3].id
+    }
+  });
+
+  await prisma.occurrence.create({
+    data: {
+      tipo: 'OUTROS',
+      local: 'Torre',
+      endereco: 'Rua Ribeiro de Brito, 800',
+      bairro: 'Torre',
+      latitude: -8.0456,
+      longitude: -34.9089,
+      status: 'NOVO',
+      prioridade: 'MEDIA',
+      descricao: 'Animal silvestre em área urbana',
+      criadoPorId: users[1].id
+    }
+  });
+
+  console.log('✅ 10 ocorrências criadas');
 
   console.log('✅ Seed concluído com sucesso!');
 }

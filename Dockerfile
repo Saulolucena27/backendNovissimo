@@ -3,13 +3,19 @@ FROM node:18 AS build
 
 WORKDIR /app
 
-# Copia configs
+# Copia package files e tsconfig
 COPY package*.json tsconfig.json ./
 
-# Instala dependências
+# CRÍTICO: Copia o schema do Prisma ANTES do npm install
+COPY prisma ./prisma
+
+# Instala dependências (inclui Prisma CLI)
 RUN npm install
 
-# Copia o código
+# Gera o Prisma Client (ESSENCIAL)
+RUN npx prisma generate
+
+# Copia o restante do código
 COPY . .
 
 # Compila o TypeScript
@@ -20,10 +26,17 @@ FROM node:18
 
 WORKDIR /app
 
-# Copia somente dist + node_modules
+# Copia node_modules da etapa de build
+COPY --from=build /app/node_modules ./node_modules
+
+# Copia o código compilado
 COPY --from=build /app/dist ./dist
+
+# Copia o schema Prisma (necessário em runtime)
+COPY --from=build /app/prisma ./prisma
+
+# Copia package.json
 COPY package*.json ./
-RUN npm install --omit=dev
 
 EXPOSE 3001
 

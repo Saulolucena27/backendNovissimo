@@ -1,19 +1,24 @@
 import { Request, Response, NextFunction } from "express";
-import { Prisma } from "@prisma/client";
+
+// Interface para erros do Prisma
+interface PrismaError extends Error {
+  code?: string;
+}
 
 export class ErrorMiddleware {
   handle(
-    error: Error,
+    error: Error | PrismaError,
     req: Request,
     res: Response,
     next: NextFunction
   ): Response {
     console.error("Error:", error);
 
-    // Prisma errors - CORREÇÃO: usar Prisma.PrismaClientKnownRequestError
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // Prisma errors
+    const prismaError = error as PrismaError;
+    if (prismaError.code) {
       // P2002: Unique constraint violation
-      if (error.code === "P2002") {
+      if (prismaError.code === "P2002") {
         return res.status(409).json({
           success: false,
           message: "Registro duplicado",
@@ -22,7 +27,7 @@ export class ErrorMiddleware {
       }
 
       // P2025: Record not found
-      if (error.code === "P2025") {
+      if (prismaError.code === "P2025") {
         return res.status(404).json({
           success: false,
           message: "Registro não encontrado",
@@ -31,7 +36,7 @@ export class ErrorMiddleware {
       }
 
       // P2003: Foreign key constraint violation
-      if (error.code === "P2003") {
+      if (prismaError.code === "P2003") {
         return res.status(400).json({
           success: false,
           message: "Violação de integridade referencial",
